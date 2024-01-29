@@ -3,7 +3,7 @@
   {
     "name": "Analog_Digital clock",
     "desc": "AN Analog_Digital clock which shows indian time Build with html,css,javaScript",
-    "image": "Analog",
+    "image": "./images/projects/Analog",
     "category": "mern",
     "links": {
       "view": "https://mehar123456.github.io/Analog_digital-Clock/",
