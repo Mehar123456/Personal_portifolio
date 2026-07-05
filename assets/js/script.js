@@ -74,22 +74,209 @@ $(document).ready(function () {
     }
   });
 
-  // EmailJS contact form
-  $("#contact-form").submit(function (event) {
-    event.preventDefault();
-    const btn = $('#contact-submit');
-    btn.html('<i class="fas fa-spinner fa-spin"></i> Sending...').prop('disabled', true);
-    emailjs.init("user_TTDmetQLYgWCLzHTDgqxm");
-    emailjs.sendForm('contact_service', 'template_contact', '#contact-form')
-      .then(function (response) {
-        btn.html('<i class="fas fa-check"></i> Sent!');
-        document.getElementById("contact-form").reset();
-        setTimeout(() => btn.html('<i class="fas fa-paper-plane"></i> Send Message').prop('disabled', false), 3000);
-      }, function (error) {
-        btn.html('<i class="fas fa-exclamation-triangle"></i> Failed').prop('disabled', false);
-        setTimeout(() => btn.html('<i class="fas fa-paper-plane"></i> Send Message'), 2000);
+  // ===== WHATSAPP CONTACT FORM =====
+  const form = document.getElementById('contact-form');
+  const submitBtn = document.getElementById('contact-submit');
+  const statusDiv = document.getElementById('form-status');
+
+  const fields = {
+    name: {
+      el: document.getElementById('form-name'),
+      errorEl: document.getElementById('error-name'),
+      validate: (val) => {
+        if (!val.trim()) return 'Name is required';
+        return '';
+      }
+    },
+    email: {
+      el: document.getElementById('form-email'),
+      errorEl: document.getElementById('error-email'),
+      validate: (val) => {
+        if (!val.trim()) return 'Email is required';
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(val.trim())) return 'Please enter a valid email address';
+        return '';
+      }
+    },
+    company: {
+      el: document.getElementById('form-company'),
+      errorEl: document.getElementById('error-company'),
+      validate: (val) => {
+        if (!val.trim()) return 'Company is required';
+        return '';
+      }
+    },
+    role: {
+      el: document.getElementById('form-role'),
+      errorEl: document.getElementById('error-role'),
+      validate: () => '' // Optional
+    },
+    phone: {
+      el: document.getElementById('form-phone'),
+      errorEl: document.getElementById('error-phone'),
+      validate: () => '' // Optional
+    },
+    subject: {
+      el: document.getElementById('form-subject'),
+      errorEl: document.getElementById('error-subject'),
+      validate: (val) => {
+        if (!val.trim()) return 'Subject is required';
+        return '';
+      }
+    },
+    message: {
+      el: document.getElementById('form-message'),
+      errorEl: document.getElementById('error-message'),
+      validate: (val) => {
+        if (!val.trim()) return 'Message is required';
+        if (val.trim().length < 10) return 'Message must be at least 10 characters long';
+        return '';
+      }
+    }
+  };
+
+  let hasSubmitted = false;
+
+  /**
+   * Validates a single field.
+   */
+  const validateField = (key, showErrors = false) => {
+    const field = fields[key];
+    const value = field.el.value;
+    const errorMsg = field.validate(value);
+
+    if (errorMsg && showErrors) {
+      field.errorEl.textContent = errorMsg;
+      field.el.parentElement.classList.add('invalid');
+    } else {
+      field.errorEl.textContent = '';
+      field.el.parentElement.classList.remove('invalid');
+    }
+
+    return !errorMsg;
+  };
+
+  /**
+   * Validates the whole form.
+   */
+  const validateForm = (showErrors = false) => {
+    let isValid = true;
+    Object.keys(fields).forEach(key => {
+      const fieldValid = validateField(key, showErrors);
+      if (!fieldValid) isValid = false;
+    });
+    submitBtn.disabled = !isValid;
+    return isValid;
+  };
+
+  /**
+   * Builds the formatted WhatsApp message.
+   */
+  const buildWhatsAppMessage = (data) => {
+    return `🚀 New Portfolio Contact\n━━━━━━━━━━━━━━━━━━━━\n👤 Name:\n${data.name}\n\n🏢 Company:\n${data.company}\n\n💼 Job Role:\n${data.role || 'Not Specified'}\n\n📧 Email:\n${data.email}\n\n📱 Phone:\n${data.phone || 'Not Specified'}\n\n📌 Subject:\n${data.subject}\n\n💬 Message:\n${data.message}\n━━━━━━━━━━━━━━━━━━━━\nSent from Srimehar's AI Portfolio`;
+  };
+
+  /**
+   * URL encodes the message text.
+   */
+  const encodeMessage = (text) => {
+    return encodeURIComponent(text);
+  };
+
+  /**
+   * Redirects the browser to WhatsApp.
+   */
+  const redirectToWhatsApp = (encodedText) => {
+    return new Promise((resolve) => {
+      const waNumber = '918688934220';
+      const waUrl = `https://wa.me/${waNumber}?text=${encodedText}`;
+
+      try {
+        const newTab = window.open(waUrl, '_blank');
+        if (!newTab || newTab.closed || typeof newTab.closed === 'undefined') {
+          window.location.href = waUrl;
+        }
+        resolve(true);
+      } catch (e) {
+        console.error('Failed to open WhatsApp window:', e);
+        resolve(false);
+      }
+    });
+  };
+
+  /**
+   * Resets the form.
+   */
+  const resetForm = () => {
+    form.reset();
+    Object.keys(fields).forEach(key => {
+      const field = fields[key];
+      field.errorEl.textContent = '';
+      field.el.parentElement.classList.remove('invalid');
+    });
+    submitBtn.disabled = true;
+  };
+
+  // Attach event listeners for real-time validation
+  if (form) {
+    Object.keys(fields).forEach(key => {
+      const field = fields[key];
+      field.el.addEventListener('input', () => {
+        validateForm(hasSubmitted);
       });
-  });
+      field.el.addEventListener('blur', () => {
+        validateField(key, true);
+        validateForm(hasSubmitted);
+      });
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      hasSubmitted = true;
+
+      if (!validateForm(true)) {
+        return;
+      }
+
+      const data = {
+        name: fields.name.el.value,
+        email: fields.email.el.value,
+        company: fields.company.el.value,
+        role: fields.role.el.value,
+        phone: fields.phone.el.value,
+        subject: fields.subject.el.value,
+        message: fields.message.el.value
+      };
+
+      statusDiv.className = 'form-status loading';
+      statusDiv.innerHTML = '<span class="spinner"></span> Processing your request...';
+      statusDiv.style.display = 'flex';
+      submitBtn.disabled = true;
+
+      const rawMsg = buildWhatsAppMessage(data);
+      const encodedMsg = encodeMessage(rawMsg);
+
+      setTimeout(() => {
+        statusDiv.innerHTML = '<span class="spinner"></span> Redirecting you to WhatsApp...';
+
+        redirectToWhatsApp(encodedMsg).then((success) => {
+          if (success) {
+            statusDiv.className = 'form-status success';
+            statusDiv.textContent = 'Redirecting to WhatsApp...';
+            resetForm();
+            hasSubmitted = false;
+            setTimeout(() => {
+              statusDiv.style.display = 'none';
+            }, 4000);
+          } else {
+            statusDiv.className = 'form-status error';
+            statusDiv.textContent = 'Unable to open WhatsApp. Please ensure WhatsApp is installed or WhatsApp Web is accessible.';
+            submitBtn.disabled = false;
+          }
+        });
+      }, 1000);
+    });
+  }
 
 });
 
