@@ -1,0 +1,12 @@
+{
+  "name": "personal-portfolio",
+  "version": "1.0.0",
+  "description": "Personal portfolio website of Srimehar Thirunagari",
+  "scripts": {
+    "dev": "npx -y serve . -p 3000",
+    "start": "npx -y serve . -p 3000"
+  },
+  "keywords": ["portfolio", "srimehar", "web developer"],
+  "author": "Srimehar Thirunagari",
+  "license": "MIT"
+}
